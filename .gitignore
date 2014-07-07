@@ -1,0 +1,8 @@
+*.depend
+*.layout
+*~
+*.save
+bin
+obj
+ecmascript-interpreter
+ecmascript-interpreter-debug
