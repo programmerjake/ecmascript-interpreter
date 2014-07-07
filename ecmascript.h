@@ -6,6 +6,8 @@
 #include <cwchar>
 #include <string>
 #include <iterator>
+#include <sstream>
+#include <cmath>
 
 using namespace std;
 
@@ -47,6 +49,10 @@ class ECMAValueString : public ECMAValue
 private:
     wstring value;
 public:
+    ECMAValueString(wstring value = L"")
+        : value(value)
+    {
+    }
     wstring getValue() const
     {
         return value;
@@ -54,6 +60,75 @@ public:
     virtual wstring toString() const override
     {
         return value;
+    }
+};
+
+class ECMAValueNumber : public ECMAValue
+{
+    GCOBJECT_POINTER_VARIABLES()
+private:
+    double value;
+public:
+    ECMAValueNumber(double value = 0)
+        : value(value)
+    {
+    }
+    ECMAValueNumber(wstring str)
+    {
+        size_t i = 0;
+        while(!str.empty() && isStrWhiteSpace(str[str.size() - 1]))
+            str.resize(str.size() - 1);
+        while(i < str.size() && isStrWhiteSpace(str[i]))
+            i++;
+        if(i >= str.size())
+        {
+            value = 0;
+            return;
+        }
+        if(str.substr(i, 2) == L"0x" || str.substr(i, 2) == L"0X")
+        {
+            if(str.size() - i == 2)
+            {
+                value = NAN;
+                return;
+            }
+            value = 0;
+            for(i += 2; i < str.size(); i++)
+            {
+                if(!isHexDigit(str[i]))
+                {
+                    value = NAN;
+                    return;
+                }
+                value *= 0x10;
+                value += getDigitValue(str[i]);
+            }
+            return;
+        }
+        value = 0;
+        if(i >= str.size())
+        {
+            value = 0;
+            return;
+        }
+        bool isNegative = false;
+        bool gotAnything = false;
+        if(str[i] == '+' || str[i] == '-')
+        {
+            gotAnything = true;
+            isNegative = str[i++] == '-';
+        }
+        double multiplier = 1;
+        int exponent = 0;
+        #error finish
+    }
+    double getValue() const
+    {
+        return value;
+    }
+    virtual wstring toString() const override
+    {
+
     }
 };
 

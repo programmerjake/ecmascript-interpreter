@@ -3,7 +3,7 @@
 
 #include <cwchar>
 
-inline bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
+constexpr bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1103,7 +1103,7 @@ inline bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
     return false;
 }
 
-inline bool isCharacterCategoryMnMc(wint_t chIn)
+constexpr bool isCharacterCategoryMnMc(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1573,7 +1573,7 @@ inline bool isCharacterCategoryMnMc(wint_t chIn)
     return false;
 }
 
-inline bool isCharacterCategoryNd(wint_t chIn)
+constexpr bool isCharacterCategoryNd(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1681,7 +1681,7 @@ inline bool isCharacterCategoryNd(wint_t chIn)
     return false;
 }
 
-inline bool isCharacterCategoryPc(wint_t chIn)
+constexpr bool isCharacterCategoryPc(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1699,6 +1699,147 @@ inline bool isCharacterCategoryPc(wint_t chIn)
     if(ch == 0xFF3F)
         return true;
     return false;
+}
+
+constexpr bool isWhiteSpace(wint_t ch)
+{
+    switch(ch)
+    {
+    case ' ':
+    case '\v':
+    case '\f':
+    case '\t':
+    case L'\u00A0':
+    case L'\u1680':
+    case L'\u2000':
+    case L'\u2001':
+    case L'\u2002':
+    case L'\u2003':
+    case L'\u2004':
+    case L'\u2005':
+    case L'\u2006':
+    case L'\u2007':
+    case L'\u2008':
+    case L'\u2009':
+    case L'\u200A':
+    case L'\u202F':
+    case L'\u205F':
+    case L'\u3000':
+    case L'\uFEFF':
+        return true;
+    default:
+        return false;
+    }
+}
+
+constexpr bool isLineTerminator(wint_t ch)
+{
+    switch(ch)
+    {
+    case '\n':
+    case '\r':
+    case L'\u2028':
+    case L'\u2029':
+        return true;
+    default:
+        return false;
+    }
+}
+
+constexpr bool isUnicodeLetter(wint_t ch)
+{
+    return isCharacterCategoryLuLlLtLmLoNl(ch);
+}
+
+constexpr bool isUnicodeCombiningMark(wint_t ch)
+{
+    return isCharacterCategoryMnMc(ch);
+}
+
+constexpr bool isUnicodeDigit(wint_t ch)
+{
+    return isCharacterCategoryNd(ch);
+}
+
+constexpr bool isUnicodeConnectorPunctuation(wint_t ch)
+{
+    return isCharacterCategoryPc(ch);
+}
+
+constexpr bool isHexDigit(wint_t ch)
+{
+    if(ch >= '0' && ch <= '9')
+        return true;
+    if(ch >= 'A' && ch <= 'F')
+        return true;
+    if(ch >= 'a' && ch <= 'f')
+        return true;
+    return false;
+}
+
+constexpr unsigned getDigitValue(wint_t ch)
+{
+    if(ch >= '0' && ch <= '9')
+        return (unsigned)ch - (unsigned)'0';
+    if(ch >= 'A' && ch <= 'Z')
+        return (unsigned)ch - (unsigned)'A' + 0xA;
+    else
+        return (unsigned)ch - (unsigned)'a' + 0xA;
+}
+
+constexpr bool isNonEscapeIdentifierStart(wint_t ch)
+{
+    return ch == '$' || ch == '_' || isUnicodeLetter(ch);
+}
+
+constexpr bool isNonEscapeIdentifierPart(wint_t ch)
+{
+    return ch == L'\u200C' || ch == L'\u200D' || isNonEscapeIdentifierStart(ch) || isUnicodeDigit(ch) || isUnicodeCombiningMark(ch) || isUnicodeConnectorPunctuation(ch);
+}
+
+constexpr bool isDecimalDigit(wint_t ch)
+{
+    return (ch >= '0' && ch <= '9');
+}
+
+constexpr bool isNonZeroDigit(wint_t ch)
+{
+    return (ch > '0' && ch <= '9');
+}
+
+constexpr bool isEscapeCharacter(wint_t ch)
+{
+    if(isDecimalDigit(ch))
+        return true;
+    switch(ch)
+    {
+    case '\'':
+    case '\"':
+    case '\\':
+    case 'b':
+    case 'f':
+    case 'n':
+    case 'r':
+    case 't':
+    case 'v':
+    case 'u':
+    case 'x':
+        return true;
+    default:
+        return false;
+    }
+}
+
+constexpr bool isNonEscapeCharacter(wint_t ch)
+{
+    if(ch == WEOF || isEscapeCharacter(ch))
+        return false;
+    return true;
+}
+
+constexpr bool isStrWhiteSpace(wint_t ch)
+{
+    return isWhiteSpace(ch) || isLineTerminator(ch);
 }
 
 #endif // UNICODE_CATEGORY_H_INCLUDED

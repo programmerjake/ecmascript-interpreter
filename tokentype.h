@@ -563,84 +563,6 @@ private:
         token.location += token.location.calcNext(peekChar, locationCalcState);
         peekChar = inputStream->get();
     }
-    static bool isWhiteSpace(wint_t ch)
-    {
-        switch(ch)
-        {
-        case ' ':
-        case '\v':
-        case '\f':
-        case '\t':
-        case L'\u00A0':
-        case L'\u1680':
-        case L'\u2000':
-        case L'\u2001':
-        case L'\u2002':
-        case L'\u2003':
-        case L'\u2004':
-        case L'\u2005':
-        case L'\u2006':
-        case L'\u2007':
-        case L'\u2008':
-        case L'\u2009':
-        case L'\u200A':
-        case L'\u202F':
-        case L'\u205F':
-        case L'\u3000':
-        case L'\uFEFF':
-            return true;
-        default:
-            return false;
-        }
-    }
-    static bool isLineTerminator(wint_t ch)
-    {
-        switch(ch)
-        {
-        case '\n':
-        case '\r':
-        case L'\u2028':
-        case L'\u2029':
-            return true;
-        default:
-            return false;
-        }
-    }
-    static bool isUnicodeLetter(wint_t ch)
-    {
-        return isCharacterCategoryLuLlLtLmLoNl(ch);
-    }
-    static bool isUnicodeCombiningMark(wint_t ch)
-    {
-        return isCharacterCategoryMnMc(ch);
-    }
-    static bool isUnicodeDigit(wint_t ch)
-    {
-        return isCharacterCategoryNd(ch);
-    }
-    static bool isUnicodeConnectorPunctuation(wint_t ch)
-    {
-        return isCharacterCategoryPc(ch);
-    }
-    static bool isHexDigit(wint_t ch)
-    {
-        if(ch >= '0' && ch <= '9')
-            return true;
-        if(ch >= 'A' && ch <= 'F')
-            return true;
-        if(ch >= 'a' && ch <= 'f')
-            return true;
-        return false;
-    }
-    static unsigned getDigitValue(wint_t ch)
-    {
-        if(ch >= '0' && ch <= '9')
-            return (unsigned)ch - (unsigned)'0';
-        if(ch >= 'A' && ch <= 'Z')
-            return (unsigned)ch - (unsigned)'A' + 0xA;
-        else
-            return (unsigned)ch - (unsigned)'a' + 0xA;
-    }
     wchar_t parseUnicodeEscapeSequence(bool addToValue)
     {
         if(peekChar != 'u')
@@ -680,14 +602,6 @@ private:
             nextChar();
         }
         return retval;
-    }
-    bool isNonEscapeIdentifierStart(wint_t ch)
-    {
-        return ch == '$' || ch == '_' || isUnicodeLetter(ch);
-    }
-    bool isNonEscapeIdentifierPart(wint_t ch)
-    {
-        return ch == L'\u200C' || ch == L'\u200D' || isNonEscapeIdentifierStart(ch) || isUnicodeDigit(ch) || isUnicodeCombiningMark(ch) || isUnicodeConnectorPunctuation(ch);
     }
     void parseIdentifierStart()
     {
@@ -731,14 +645,6 @@ private:
     {
         while(isWhiteSpace(peekChar))
             nextChar();
-    }
-    static bool isDecimalDigit(wint_t ch)
-    {
-        return (ch >= '0' && ch <= '9');
-    }
-    static bool isNonZeroDigit(wint_t ch)
-    {
-        return (ch > '0' && ch <= '9');
     }
     void parseLineTerminator()
     {
@@ -822,34 +728,6 @@ private:
                 nextChar();
             }
         }
-    }
-    static bool isEscapeCharacter(wint_t ch)
-    {
-        if(isDecimalDigit(ch))
-            return true;
-        switch(ch)
-        {
-        case '\'':
-        case '\"':
-        case '\\':
-        case 'b':
-        case 'f':
-        case 'n':
-        case 'r':
-        case 't':
-        case 'v':
-        case 'u':
-        case 'x':
-            return true;
-        default:
-            return false;
-        }
-    }
-    static bool isNonEscapeCharacter(wint_t ch)
-    {
-        if(ch == WEOF || isEscapeCharacter(ch))
-            return false;
-        return true;
     }
     void parseString()
     {
