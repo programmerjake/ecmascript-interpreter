@@ -10,7 +10,7 @@ class range
 {
     T beginV, endV;
 public:
-    constexpr range()
+    constexpr range() // must be empty
     {
     }
     constexpr range(T beginV, T endV)

@@ -10,6 +10,9 @@ GarbageCollector gc;
 
 int main()
 {
+#if 1
+    wcout << gc.allocate<ECMAValueNumber>(L"+1.11829343279384721398e123")->toString() << endl;
+#else
     try
     {
         Tokenizer tokenizer(make_shared<wifstream>("test.js"));
@@ -22,5 +25,6 @@ int main()
     {
         cout << "Error : " << e.what() << endl;
     }
+#endif
     return 0;
 }

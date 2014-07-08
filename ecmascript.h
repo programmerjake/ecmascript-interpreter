@@ -68,6 +68,25 @@ class ECMAValueNumber : public ECMAValue
     GCOBJECT_POINTER_VARIABLES()
 private:
     double value;
+    double roundToDouble(long double v)
+    {
+        if(std::isnan(v) || std::isinf(v) || v == 0)
+            return (double)v;
+        if(abs(v) < std::pow((long double)2, -1074))
+            return (v < 0) ? -0 : 0;
+        if(abs(v) > (1 + (1 - std::pow((long double)2, -52))) * std::pow((long double)2, 1023))
+            return (v < 0) ? -INFINITY : INFINITY;
+        double retval = (double)v;
+        long double delta = v - retval;
+        double altRetval;
+        if(delta < 0)
+            altRetval = std::nextafter(retval, (double)-INFINITY);
+        else
+            altRetval = std::nextafter(retval, (double)INFINITY);
+        if(abs(altRetval - v) < abs(delta))
+            return altRetval;
+        return retval;
+    }
 public:
     ECMAValueNumber(double value = 0)
         : value(value)
@@ -75,6 +94,7 @@ public:
     }
     ECMAValueNumber(wstring str)
     {
+        long double value;
         size_t i = 0;
         while(!str.empty() && isStrWhiteSpace(str[str.size() - 1]))
             str.resize(str.size() - 1);
@@ -82,14 +102,14 @@ public:
             i++;
         if(i >= str.size())
         {
-            value = 0;
+            this->value = 0;
             return;
         }
         if(str.substr(i, 2) == L"0x" || str.substr(i, 2) == L"0X")
         {
             if(str.size() - i == 2)
             {
-                value = NAN;
+                this->value = NAN;
                 return;
             }
             value = 0;
@@ -97,38 +117,225 @@ public:
             {
                 if(!isHexDigit(str[i]))
                 {
-                    value = NAN;
+                    this->value = NAN;
                     return;
                 }
                 value *= 0x10;
                 value += getDigitValue(str[i]);
             }
+            this->value = value;
             return;
         }
         value = 0;
         if(i >= str.size())
         {
-            value = 0;
+            this->value = 0;
             return;
         }
         bool isNegative = false;
-        bool gotAnything = false;
+        bool gotSign = false;
         if(str[i] == '+' || str[i] == '-')
         {
-            gotAnything = true;
+            gotSign = true;
             isNegative = str[i++] == '-';
         }
-        double multiplier = 1;
-        int exponent = 0;
-        #error finish
+        if(i >= str.size())
+        {
+            this->value = gotSign ? NAN : 0;
+            return;
+        }
+        if(str.substr(i) == L"Infinity")
+        {
+            this->value = INFINITY;
+            if(isNegative)
+                this->value = -INFINITY;
+            return;
+        }
+        if(!isDecimalDigit(str[i]) && str[i] != '.')
+        {
+            this->value = NAN;
+            return;
+        }
+        bool gotAnyDigits = false;
+        while(i < str.size() && isDecimalDigit(str[i]))
+        {
+            gotAnyDigits = true;
+            value *= 10;
+            value += getDigitValue(str[i++]);
+        }
+        if(i < str.size() && str[i] == '.')
+        {
+            i++;
+            if(i >= str.size())
+            {
+                if(!gotAnyDigits)
+                    this->value = NAN;
+                else if(isNegative)
+                    this->value = -roundToDouble(value);
+                else
+                    this->value = roundToDouble(value);
+                return;
+            }
+            if(!gotAnyDigits && !isDecimalDigit(str[i]))
+            {
+                this->value = NAN;
+                return;
+            }
+            long double decimalValue = 0;
+            int digitCount = 0;
+            while(i < str.size() && isDecimalDigit(str[i]))
+            {
+                decimalValue *= 10;
+                digitCount++;
+                decimalValue += getDigitValue(str[i++]);
+            }
+            value += decimalValue * std::pow((long double)10, (long double)-digitCount);
+        }
+        if(i < str.size() && (str[i] == 'e' || str[i] == 'E'))
+        {
+            i++;
+            if(i >= str.size())
+            {
+                this->value = NAN;
+                return;
+            }
+            bool isExponentNegative = false;
+            if(str[i] == '+' || str[i] == '-')
+            {
+                isExponentNegative = str[i++] == '-';
+            }
+            if(i >= str.size() || !isDecimalDigit(str[i]))
+            {
+                this->value = NAN;
+                return;
+            }
+            long double exponentValue = 0;
+            while(i < str.size())
+            {
+                if(!isDecimalDigit(str[i]))
+                {
+                    value = NAN;
+                    return;
+                }
+                exponentValue *= 10;
+                exponentValue += getDigitValue(str[i++]);
+            }
+            if(isExponentNegative)
+                exponentValue = -exponentValue;
+            value *= std::pow((long double)10, exponentValue);
+        }
+        if(i < str.size())
+        {
+            this->value = NAN;
+            return;
+        }
+        if(isNegative)
+            this->value = -roundToDouble(value);
+        else
+            this->value = roundToDouble(value);
     }
     double getValue() const
     {
         return value;
     }
+private:
+    static wstring getUnsignedString(long double v)
+    {
+        assert(floor(v) == v && v >= 0);
+        wstring retval;
+        do
+        {
+            long double v_10 = std::floor((v + (long double)1 / 2) / 10);
+            int digit = ((int)(v - 10 * v_10) % 10 + 10) % 10;
+            retval.append(1, getDigitCharacter(digit));
+            v = v_10;
+        }
+        while(v > 0);
+        for(size_t i = 0, j = retval.size() - 1; i < j; i++, j--)
+        {
+            std::swap(retval[i], retval[j]);
+        }
+        return retval;
+    }
+    static wstring getUnsignedString(int v)
+    {
+        assert(v >= 0);
+        wstring retval;
+        do
+        {
+            retval.append(1, getDigitCharacter(v % 10));
+            v = v / 10;
+        }
+        while(v > 0);
+        for(size_t i = 0, j = retval.size() - 1; i < j; i++, j--)
+        {
+            std::swap(retval[i], retval[j]);
+        }
+        return retval;
+    }
+public:
     virtual wstring toString() const override
     {
-
+        long double value = this->value;
+        if(std::isnan(value))
+            return L"NaN";
+        wstring retval = L"";
+        if(value == 0)
+            return L"0";
+        if(value < 0)
+            retval += L'-';
+        value = std::abs(value);
+        if(std::isinf(value))
+            return retval + L"Infinity";
+        int log10Value = (int)std::floor(std::log10(value));
+        constexpr int maxDigitCount = 16;
+        log10Value -= maxDigitCount - 1;
+        value *= std::pow((long double)10, -log10Value);
+        value = std::floor(value + (long double)1 / 2);
+        for(int i = 0; i < maxDigitCount && std::floor((value + (long double)1 / 2) / 10) * 10 == value; i++)
+        {
+            log10Value++;
+            value = std::floor((value + (long double)1 / 2) / 10);
+        }
+        assert(value > 0);
+        int k = (int)std::floor(std::log10(value)) + 1;
+        assert(k > 0);
+        int n = log10Value + k;
+        long double s = value;
+        if(k <= n && n <= 21)
+        {
+            retval += getUnsignedString(s);
+            retval.append(n - k, L'0');
+            return retval;
+        }
+        if(0 < n && n <= 21)
+        {
+            wstring str = getUnsignedString(s);
+            str.insert(n, 1, L'.');
+            return retval + str;
+        }
+        if(-6 < n && n <= 0)
+        {
+            retval += L"0.";
+            retval.append(-n, L'0');
+            retval += getUnsignedString(s);
+            return retval;
+        }
+        if(k == 1)
+        {
+            retval += getDigitCharacter((int)std::floor((long double)1 / 2 + s));
+            n--;
+            retval += (n >= 0 ? L"e+" : L"e-");
+            retval += getUnsignedString(std::abs(n));
+            return retval;
+        }
+        n--;
+        wstring str = getUnsignedString(s);
+        str.insert(1, 1, L'.');
+        retval += str;
+        retval += (n >= 0 ? L"e+" : L"e-");
+        retval += getUnsignedString(std::abs(n));
+        return retval;
     }
 };
 

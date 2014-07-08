@@ -3,7 +3,7 @@
 
 #include <cwchar>
 
-constexpr bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
+inline bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1103,7 +1103,7 @@ constexpr bool isCharacterCategoryLuLlLtLmLoNl(wint_t chIn)
     return false;
 }
 
-constexpr bool isCharacterCategoryMnMc(wint_t chIn)
+inline bool isCharacterCategoryMnMc(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1573,7 +1573,7 @@ constexpr bool isCharacterCategoryMnMc(wint_t chIn)
     return false;
 }
 
-constexpr bool isCharacterCategoryNd(wint_t chIn)
+inline bool isCharacterCategoryNd(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1681,7 +1681,7 @@ constexpr bool isCharacterCategoryNd(wint_t chIn)
     return false;
 }
 
-constexpr bool isCharacterCategoryPc(wint_t chIn)
+inline bool isCharacterCategoryPc(wint_t chIn)
 {
     unsigned ch = (unsigned)chIn;
     if(chIn == WEOF)
@@ -1701,7 +1701,7 @@ constexpr bool isCharacterCategoryPc(wint_t chIn)
     return false;
 }
 
-constexpr bool isWhiteSpace(wint_t ch)
+inline bool isWhiteSpace(wint_t ch)
 {
     switch(ch)
     {
@@ -1732,7 +1732,7 @@ constexpr bool isWhiteSpace(wint_t ch)
     }
 }
 
-constexpr bool isLineTerminator(wint_t ch)
+inline bool isLineTerminator(wint_t ch)
 {
     switch(ch)
     {
@@ -1746,27 +1746,27 @@ constexpr bool isLineTerminator(wint_t ch)
     }
 }
 
-constexpr bool isUnicodeLetter(wint_t ch)
+inline bool isUnicodeLetter(wint_t ch)
 {
     return isCharacterCategoryLuLlLtLmLoNl(ch);
 }
 
-constexpr bool isUnicodeCombiningMark(wint_t ch)
+inline bool isUnicodeCombiningMark(wint_t ch)
 {
     return isCharacterCategoryMnMc(ch);
 }
 
-constexpr bool isUnicodeDigit(wint_t ch)
+inline bool isUnicodeDigit(wint_t ch)
 {
     return isCharacterCategoryNd(ch);
 }
 
-constexpr bool isUnicodeConnectorPunctuation(wint_t ch)
+inline bool isUnicodeConnectorPunctuation(wint_t ch)
 {
     return isCharacterCategoryPc(ch);
 }
 
-constexpr bool isHexDigit(wint_t ch)
+inline bool isHexDigit(wint_t ch)
 {
     if(ch >= '0' && ch <= '9')
         return true;
@@ -1777,7 +1777,7 @@ constexpr bool isHexDigit(wint_t ch)
     return false;
 }
 
-constexpr unsigned getDigitValue(wint_t ch)
+inline unsigned getDigitValue(wint_t ch)
 {
     if(ch >= '0' && ch <= '9')
         return (unsigned)ch - (unsigned)'0';
@@ -1787,27 +1787,35 @@ constexpr unsigned getDigitValue(wint_t ch)
         return (unsigned)ch - (unsigned)'a' + 0xA;
 }
 
-constexpr bool isNonEscapeIdentifierStart(wint_t ch)
+inline wchar_t getDigitCharacter(unsigned v)
+{
+    if(v < 10)
+        return L'0' + v;
+    v -= 10;
+    return L'A' + v;
+}
+
+inline bool isNonEscapeIdentifierStart(wint_t ch)
 {
     return ch == '$' || ch == '_' || isUnicodeLetter(ch);
 }
 
-constexpr bool isNonEscapeIdentifierPart(wint_t ch)
+inline bool isNonEscapeIdentifierPart(wint_t ch)
 {
     return ch == L'\u200C' || ch == L'\u200D' || isNonEscapeIdentifierStart(ch) || isUnicodeDigit(ch) || isUnicodeCombiningMark(ch) || isUnicodeConnectorPunctuation(ch);
 }
 
-constexpr bool isDecimalDigit(wint_t ch)
+inline bool isDecimalDigit(wint_t ch)
 {
     return (ch >= '0' && ch <= '9');
 }
 
-constexpr bool isNonZeroDigit(wint_t ch)
+inline bool isNonZeroDigit(wint_t ch)
 {
     return (ch > '0' && ch <= '9');
 }
 
-constexpr bool isEscapeCharacter(wint_t ch)
+inline bool isEscapeCharacter(wint_t ch)
 {
     if(isDecimalDigit(ch))
         return true;
@@ -1830,14 +1838,14 @@ constexpr bool isEscapeCharacter(wint_t ch)
     }
 }
 
-constexpr bool isNonEscapeCharacter(wint_t ch)
+inline bool isNonEscapeCharacter(wint_t ch)
 {
     if(ch == WEOF || isEscapeCharacter(ch))
         return false;
     return true;
 }
 
-constexpr bool isStrWhiteSpace(wint_t ch)
+inline bool isStrWhiteSpace(wint_t ch)
 {
     return isWhiteSpace(ch) || isLineTerminator(ch);
 }

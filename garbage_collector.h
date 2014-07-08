@@ -358,6 +358,7 @@ private:
         state = Used;
         pointerDescriptorArrayInternal = make_range(membersPointerDescriptorArray);
         this->size = size;
+        this->gc = gc;
         for(const GCPtrDesc & pointerDescriptor : pointerDescriptorArrayInternal)
         {
             pointerDescriptor.initObject(this);
